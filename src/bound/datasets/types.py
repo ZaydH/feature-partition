@@ -29,7 +29,6 @@ class SplitDataset(Enum):
     CIFAR10 = DatasetParams("CIFAR10", CIFAR_DIM, 10)
 
     MNIST = DatasetParams("MNIST", MNIST_DIM, 10)
-    MNIST_FLAT = DatasetParams("MNIST-Flat", MNIST_DIM, 10)
 
     WEATHER = DatasetParams("Shifts-Weather", WEATHER_DIM, -1)
 
@@ -44,7 +43,6 @@ class SplitDataset(Enum):
         r""" Returns \p True if dataset is a MNIST or MNIST-variant dataset """
         mnist_ds = [
             self.MNIST,
-            self.MNIST_FLAT,
         ]
         return self in mnist_ds
 

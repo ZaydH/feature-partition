@@ -12,6 +12,5 @@
   # Huber regression params
   model_params:
     alpha: 4.51E-5
-    epsilon: 5
     max_iter: 1E8
     tol: 1e-08

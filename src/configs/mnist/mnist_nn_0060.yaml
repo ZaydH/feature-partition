@@ -1,9 +1,10 @@
 ---
   dataset: "mnist"
   is_classification: True
-  top_k_vals: [2, 3]
-  random_feat_split: True
-  forward_batch_size: 4096
+  top_k_vals: []
+  random_feat_split: False
+  walking_feat_split: True
+  forward_batch_size: 128
   # Ensemble parameters
   alt_type: "nn"
   n_disjoint_models: 60

@@ -12,13 +12,16 @@
   # LightGBM params
   model_params:
     boosting_type: "gbdt"
-    n_estimators: 500
-    max_depth: 5
+    n_estimators: 1000
+    min_child_samples: 5
+    max_depth: 6
     num_leaves: 127
     objective: "mae"
-    reg_alpha: 0.0
-    reg_lambda: 0.0
-    learning_rate: 0.3
-    subsample: 0.5
-    colsample_bytree: 0.5
+    reg_alpha: 1E-3
+    reg_lambda: 1E2
+    learning_rate: 1E-2
+    random_state: 42
+    subsample: 0.9
+    colsample_bytree: 0.8
+    subsample_freq: 1
     verbose: -1

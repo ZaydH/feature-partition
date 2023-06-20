@@ -118,9 +118,22 @@ def load_data(cifar_dir: Path) -> TensorGroup:
         tg = pk.load(f_in)  # type: TensorGroup
 
     config.set_num_classes(num_classes=config.DATASET.get_n_classes())
+    _normalize_x(tg=tg)
     utils.print_stats(tg=tg)
 
     return tg
+
+
+def _normalize_x(tg: TensorGroup) -> NoReturn:
+    r""" Normalize x according to the mean and variance"""
+    std, mean = torch.std_mean(tg.tr_x, dim=(0, 2, 3), keepdim=True)
+    for f in dataclasses.fields(tg):
+        f_name = f.name
+        if not f_name.endswith("_x"):
+            continue
+        val = tg.__getattribute__(f_name)
+        val -= mean
+        val /= std
 
 
 def construct_tfms(x: Tensor):

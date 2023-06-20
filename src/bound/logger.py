@@ -56,6 +56,7 @@ def setup(log_level: int = logging.DEBUG) -> NoReturn:
     logging.debug("Torch Version: %s", torch.__version__)
     logging.debug("Torch CUDA: %s", "ENABLED" if torch.cuda.is_available() else "Disabled")
     if torch.cuda.is_available():
+        logging.debug(f"Torch CUDA Version: {torch.version.cuda}")
         logging.debug(f"# CUDA GPUs: {torch.cuda.device_count()}")
         logging.debug(f"GPU Name: {torch.cuda.get_device_name()}")
     logging.debug("# CPUs: %d", get_num_usable_cpus())

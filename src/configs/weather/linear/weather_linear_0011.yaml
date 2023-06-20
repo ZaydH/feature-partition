@@ -3,6 +3,7 @@
   is_regression: True
   random_feat_split: True
   bound_dist: [3]
+  is_bound_percent: False
   forward_batch_size: 4096
   # Ensemble parameters
   alt_type: "lasso"
@@ -11,5 +12,5 @@
   # Lasso params
   model_params:
     alpha: 3.16E-3
-    max_iter: 1E7
-    tol: 1e-08
+    max_iter: 1E4
+    tol: 1e-03

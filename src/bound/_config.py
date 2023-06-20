@@ -1,6 +1,7 @@
 __all__ = [
     "ALT_TYPE",
     "BATCH_SIZE",
+    "COLUMN_FEAT_SPLIT",
     "DATASET",
     "DEBUG",
     "FORWARD_BATCH_SIZE",
@@ -81,6 +82,7 @@ BOUND_DIST = None
 IS_BOUND_PERCENT = False
 
 PARTITION_TRAIN = False
+COLUMN_FEAT_SPLIT = False
 RANDOM_FEAT_SPLIT = False
 PATCH_FEAT_SPLIT = False
 WALKING_FEAT_SPLIT = False
@@ -198,6 +200,7 @@ def _verify_configuration() -> NoReturn:
 
     # Only a single feature split version is supported
     feats_versions = [
+        COLUMN_FEAT_SPLIT,
         PATCH_FEAT_SPLIT,
         RANDOM_FEAT_SPLIT,
         WALKING_FEAT_SPLIT,
@@ -232,6 +235,7 @@ def print_configuration(log: Callable = logging.info) -> NoReturn:
         log(f"Is Bound Distance Percentage: {IS_BOUND_PERCENT}")
 
     log(f"Random Feature Split: {RANDOM_FEAT_SPLIT}")
+    log(f"Column Feature Split: {COLUMN_FEAT_SPLIT}")
     log(f"Patch Feature Split: {PATCH_FEAT_SPLIT}")
     log(f"Walking Feature Split: {WALKING_FEAT_SPLIT}")
     log(f"Partition Training Set: {PARTITION_TRAIN}")

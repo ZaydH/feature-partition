@@ -1,8 +1,8 @@
 # Feature Partition Aggregation
 
-[![docs](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ZaydH/certified-sparse/blob/main/LICENSE)
+[![docs](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ZaydH/feature-partition/blob/main/LICENSE)
 
-This repository contains the source code for reproducing the paper "Feature Partition Aggregation: A Fast Certified Defense Against a Union of Sparse Adversarial Attacks".
+This repository contains the source code for reproducing the paper "Feature Partition Aggregation: A Fast Certified Defense Against a Union of $\ell_0$ Attacks".
 
 * Authors: [Zayd Hammoudeh](https://zaydh.github.io/) and [Daniel Lowd](https://ix.cs.uoregon.edu/~lowd/)
 * Link to Paper: [Arxiv](https://arxiv.org/abs/2302.11628)
@@ -23,7 +23,7 @@ These downloaded files are stored in a folder `.data` that is in the same direct
 
 ### Requirements
 
-Our implementation was tested in Python&nbsp;3.7.13.  For the full requirements, see `requirements.txt` in the `src` directory.  If a different version of Python is used, some package settings in `requirements.txt` may need to change.
+Our implementation was tested in Python&nbsp;3.10.10.  For the full requirements, see `requirements.txt` in the `src` directory.  If a different version of Python is used, some package settings in `requirements.txt` may need to change.
 
 We recommend running our program in a [virtual environment](https://docs.python.org/3/tutorial/venv.html).  Once your virtual environment is created and *active*, run the following in the `src` directory:
 
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ## License
 
-[MIT](https://github.com/ZaydH/certified-sparse/blob/main/LICENSE)
+[MIT](https://github.com/ZaydH/feature-partition/blob/main/LICENSE)
 
 ## Citation
 
@@ -42,7 +42,7 @@ pip install -r requirements.txt
 @misc{Hammoudeh:2023:FeaturePartition,
     author = {Hammoudeh, Zayd and
               Lowd, Daniel},
-    title = {Feature Partition Aggregation: A Fast Certified Defense Against a Union of Sparse Adversarial Attacks},
+    title = {Feature Partition Aggregation: A Fast Certified Defense Against a Union of $\ell_0$ Attacks},
     year  = {2023},
     eprint = {2302.11628},
     archivePrefix = {arXiv},

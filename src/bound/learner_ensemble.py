@@ -15,6 +15,7 @@ from pathlib import Path
 from pickle import UnpicklingError
 import sys
 from typing import Any, List, NoReturn, Optional, Tuple
+import warnings
 
 from lightgbm import LGBMRegressor
 import pycm
@@ -31,8 +32,9 @@ import torch.nn.functional as F  # noqa
 
 from . import _config as config
 from . import dirs
+from ._fixed_predictor import MedianRegressor
 from .learner_submodel import SubLearner
-from . import robustness_certifier
+from . import robustness
 from .types import CustomTensorDataset, TensorGroup
 
 from . import utils
@@ -46,7 +48,7 @@ REG_LOSS = F.l1_loss
 
 class DisjointEnsemble:
     r""" Ensemble regression learner """
-    def __init__(self, opt_params: Optional[dict]):
+    def __init__(self, x: Tensor, opt_params: Optional[dict]):
         super().__init__()
 
         flds = []
@@ -55,7 +57,7 @@ class DisjointEnsemble:
         flds += ["disjoint"]
         self._prefix = "-".join(flds)
 
-        self._assign_submodel_feats()
+        self._assign_submodel_feats(x=x)
 
         self._model_paths = []
 
@@ -64,7 +66,7 @@ class DisjointEnsemble:
 
         self._opt_params = opt_params if opt_params is not None else dict()
 
-    def _assign_submodel_feats(self) -> NoReturn:
+    def _assign_submodel_feats(self, x: Tensor) -> NoReturn:
         r""" Assign the submodel features """
         ds_parts_path = utils.construct_filename(prefix=self._prefix + "-model-feats",
                                                  file_ext="pk",
@@ -90,7 +92,7 @@ class DisjointEnsemble:
             with open(ds_parts_path, "wb+") as f_out:
                 pk.dump(self._submodel_feats, f_out)
         else:
-            logging.warning(f"Loading submodel feats from file \"{ds_parts_path}\"")
+            # logging.warning(f"Loading submodel feats from file \"{ds_parts_path}\"")
             with open(ds_parts_path, "rb") as f_in:
                 self._submodel_feats = pk.load(f_in)
 
@@ -184,6 +186,30 @@ class DisjointEnsemble:
             raise NotImplemented("Spread random spread degree above 1 not implemented")
 
         model_feats = [[mod_id] for mod_id in range(0, config.N_DISJOINT_MODELS)]
+        return model_feats
+
+    @staticmethod
+    def _assign_column_feats(x: Tensor) -> List[List[int]]:
+        r"""
+        Assigns features to each model uniformly at random
+
+        The implementation does not directly rely on a hash function.  Instead it performs
+        a series of random permutations.  This ensures that each model is trained on the same
+        number of dataset partitions.
+
+        :return: Assignment of dataset parts to the models
+        """
+        assert config.N_DISJOINT_MODELS <= x.shape[2], "Feat dim must exceed disjoint model count"
+        n_row, n_col = x.shape[1], x.shape[2]
+        model_feats = []
+        for i in range(config.N_DISJOINT_MODELS):
+            feats = []
+            start_col = i * n_col // config.N_DISJOINT_MODELS
+            end_col = min(n_col, (i + 1) * n_col // config.N_DISJOINT_MODELS)
+            for col in range(start_col, end_col):
+                for row in range(n_row):
+                    feats.append(row * n_col + col)
+            model_feats.append(feats)
         return model_feats
 
     def name(self) -> str:
@@ -325,12 +351,18 @@ class DisjointEnsemble:
         if config.IS_CLASSIFICATION:
             raise ValueError(f"Unknown alternate cls. submodel type {config.ALT_TYPE.name}")
         else:
+            try:
+                self._opt_params["max_iter"] = int(self._opt_params["max_iter"])
+            except KeyError:
+                pass
             if config.ALT_TYPE.is_lgbm():
                 model = LGBMRegressor(**self._opt_params)
             elif config.ALT_TYPE.is_huber():
                 model = HuberRegressor(**self._opt_params)
             elif config.ALT_TYPE.is_lasso():
                 model = Lasso(**self._opt_params)
+            elif config.ALT_TYPE.is_median():
+                model = MedianRegressor(**self._opt_params)
             else:
                 raise ValueError(f"Unknown alternate reg. submodel type {config.ALT_TYPE.name}")
 
@@ -385,9 +417,11 @@ class DisjointEnsemble:
         logging.debug(f"{str_prefix} {ds_name} Size: {y.numel()}")
         logging.debug(f"{str_prefix} {ds_name} Accuracy: {100. * conf_matrix.Overall_ACC:.3}%")  # noqa
 
-        # Write confusion matrix to a string so it can be logged
         sys.stdout = cm_out = io.StringIO()
-        conf_matrix.print_matrix()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=RuntimeWarning)
+            # Write confusion matrix to a string so it can be logged
+            conf_matrix.print_matrix()
         sys.stdout = sys.__stdout__
         # Log the confusion matrix
         cm_str = cm_out.getvalue()
@@ -474,6 +508,7 @@ class DisjointEnsemble:
         ensemble_preds = []
 
         for i_model, model_path in enumerate(self._model_paths):
+            # logging.debug(f"Loading Submodel File: {model_path}")
             try:
                 model = self._load_submodel(model_path=model_path)
             except EOFError as e:
@@ -506,13 +541,15 @@ class DisjointEnsemble:
                     if config.ALT_TYPE.is_torch():
                         xs = xs.to(utils.TORCH_DEVICE)
                     if use_predict:
-                        ys = self._model_predict(model=model, xs=xs)
+                        ys = self._model_predict(model=model, xs=xs).view([-1, 1])
                     else:
                         ys = self._model_forward(model=model, xs=xs)
+                        if config.IS_CLASSIFICATION:
+                            ys.unsqueeze_(dim=1)
                     model_preds.append(ys.cpu())
 
             # All of the example predictions combined
-            model_preds = torch.cat(model_preds, dim=0).view([-1, 1])
+            model_preds = torch.cat(model_preds, dim=0)  # .view([-1, 1])
             ensemble_preds.append(model_preds)
 
         # Aggregate
@@ -578,8 +615,15 @@ class DisjointEnsemble:
         if not config.ALT_TYPE.is_torch():
             xs = xs.numpy()
         # Custom for models using the sklearn API
-        y_hat = model.predict(xs)
-        y_hat = torch.from_numpy(y_hat).view([-1, 1])
+        if config.IS_CLASSIFICATION:
+            y_hat = model.predict_proba(xs)
+        elif config.IS_REGRESSION:
+            y_hat = model.predict(xs)
+        else:
+            raise ValueError("Unknown how to predict with model")
+        y_hat = torch.from_numpy(y_hat)
+        if config.IS_REGRESSION:
+            y_hat = y_hat.view([-1, 1])
         return y_hat.to(device)
 
     def _model_predict(self, model, xs: Tensor) -> Tensor:
@@ -593,30 +637,6 @@ class DisjointEnsemble:
     def n_models(self) -> int:
         r""" Number of submodels used in the ensemble """
         return config.get_n_model()
-
-    # def is_disjoint(self) -> bool:
-    #     r""" Default is that the model does not train on disjoint sets """
-    #     return self._spread_degree == 1
-    #
-    # @staticmethod
-    # def is_multicover() -> bool:
-    #     r""" Return \p True if the model supports multi-coverage """
-    #     return False
-
-    # @property
-    # def n_feats(self) -> int:
-    #     r""" Number of dataset features used by the model """
-    #     return self._n_feats
-
-    # @property
-    # def ppm(self) -> int:
-    #     r""" Number of dataset parts per submodel """
-    #     return self._spread_degree
-
-    # def get_submodel_ds_parts(self, model_id: int) -> List[int]:
-    #     r""" Accessor for the dataset parts used to train the submodel """
-    #     assert 0 <= model_id < self.n_models, f"Model ID {model_id} not in [0,{self.n_models})"
-    #     return copy.deepcopy(self._model_ds_parts[model_id])
 
     def calc_prediction(self, ys: Tensor) -> Tensor:
         r"""
@@ -648,7 +668,7 @@ class DisjointEnsemble:
     def calc_classification_bound(n_cls: int, full_yhat: Tensor,
                                   y_lbl: LongTensor) -> LongTensor:
         r""" Calculates the top-1 bound """
-        bound = robustness_certifier.calc_classification_bound(n_cls, full_yhat=full_yhat,
+        bound = robustness.certifier.calc_classification_bound(n_cls, full_yhat=full_yhat,
                                                                y=y_lbl)
         return bound
 
@@ -663,8 +683,14 @@ class DisjointEnsemble:
         :param y:
         :return:
         """
-        bound = robustness_certifier.calc_topk_bound(k=k, n_cls=n_cls, full_yhat=full_yhat, y=y)
+        bound = robustness.certifier.calc_topk_bound(k=k, n_cls=n_cls, full_yhat=full_yhat, y=y)
         return bound
+
+    @staticmethod
+    def calc_runoff_bound(full_yhat: Tensor) -> Tuple[LongTensor, LongTensor]:
+        r""" Calculates the top-1 bound """
+        res = robustness.runoff.calc(all_votes=full_yhat)
+        return res
 
 
 def create_fit_dataloader(model_id: int, tg: TensorGroup, submodel_feats: List[int], bs: int) \
@@ -850,7 +876,7 @@ def train_ensemble(tg: TensorGroup, opt_params: Optional[dict] = None) -> Disjoi
     model_desc = f"Disjoint ensemble with {model_str} total models"
 
     if not train_net_path.exists():
-        learner = DisjointEnsemble(opt_params=opt_params)
+        learner = DisjointEnsemble(opt_params=opt_params, x=tg.tr_x[0])
         learner.fit(tg=tg)
 
         logging.info(f"Saving final {model_desc}...")

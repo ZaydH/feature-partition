@@ -1,7 +1,7 @@
 @misc{Hammoudeh:2023:FeaturePartition,
     author = {Hammoudeh, Zayd and
               Lowd, Daniel},
-    title = {Feature Partition Aggregation: A Fast Certified Defense Against a Union of Sparse Adversarial Attacks},
+    title = {Feature Partition Aggregation: A Fast Certified Defense Against a Union of $\ell_0$ Attacks},
     year  = {2023},
     eprint = {2302.11628},
     archivePrefix = {arXiv},
