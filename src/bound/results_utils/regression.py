@@ -103,6 +103,6 @@ def _log_ds_bounds(model: learner_ensemble.DisjointEnsemble, ds_info: Regression
     all_cert = torch.cat(all_cert, dim=1)
     combined_cert, _ = all_cert.min(dim=1)
 
-    cert_ratio = utils.log_certification_ratio(model=model, bound=combined_cert)
+    cert_ratio = utils.log_robustness(bounds=[combined_cert], bounds_desc=["Plurality Voting"])
 
     return cert_ratio

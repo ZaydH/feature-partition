@@ -25,8 +25,7 @@ def calc(model: DisjointEnsemble, tg: TensorGroup) -> NoReturn:
 
     tot_time = time.time() - start
     avg_time = tot_time / n_test
-    logging.info(f"Total Certification Time: {tot_time}")
-    logging.info(f"# Test Instances Certified: {n_test}")
+    logging.info(f"Total Certification Time: {tot_time:.3f}s")
     logging.info(f"Average Time to Certify One Prediction: {avg_time:.3E}")
 
     return res

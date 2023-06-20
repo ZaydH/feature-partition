@@ -1,61 +1,51 @@
 __all__ = [
     "build_bound_str",
-    "log_certification_ratio",
+    "log_robustness",
 ]
 
 import logging
-from typing import NoReturn, Optional, Union
+from typing import List, NoReturn, Union
 
 import torch
 from torch import BoolTensor, LongTensor, Tensor
 
 from .. import _config as config
-from .. import learner_ensemble
 
 PLOT_QUANTILE = 0.05
 DEFAULT_N_BINS = 20
 
 
-def log_certification_ratio(model: learner_ensemble.DisjointEnsemble, bound: LongTensor,
-                            k: Optional[int] = None) -> NoReturn:
+def log_robustness(bounds: List[LongTensor], bounds_desc: List[str]) -> NoReturn:
     r""" Log the certification ratio for the predictions """
-    if len(bound.shape) > 1:
-        bound = bound.squeeze(dim=1)
-    assert len(bound.shape) == 1, "Unexpected size of the bound tensors"
+    assert len(bounds) == len(bounds_desc), "Mismatch in the bound shapes"
+    for bound in bounds:
+        if len(bound.shape) > 1:
+            bound.squeeze_(dim=1)
+    shape = bounds[0].shape
+    assert all(bound.shape == shape for bound in bounds), "Mismatch bound shapes"
 
-    header = f"{model.name()}"
-
-    for base_bound in [0]:
-        _print_cert_res(header=header, model=model, bound_cnt=base_bound,
-                        bound_mask=bound >= base_bound, k=k)
-
-    for i in range(1, bound.max().item() + 1):
-        bound_mask = bound >= i
-        _print_cert_res(header=header, model=model, bound_cnt=i, bound_mask=bound_mask, k=k)
+    max_bound = max(bound.max().item() for bound in bounds)
+    for i in range(0, max_bound + 1):
+        bound_masks = [bound >= i for bound in bounds]
+        _print_cert_res(header="Cert.", bound_cnt=i, bound_masks=bound_masks,
+                        masks_desc=bounds_desc)
 
 
-def _print_cert_res(header: str, k: int, model: learner_ensemble.DisjointEnsemble,
-                    bound_cnt: int, bound_mask: BoolTensor) -> float:
+def _print_cert_res(header: str, bound_cnt: int, bound_masks: List[BoolTensor],
+                    masks_desc: List[str]) -> NoReturn:
     r"""
     Standardizes printing the certification results
     :return: Prints the certified ratio
     """
-    tot_count = bound_mask.numel()
+    tot_count = bound_masks[0].numel()
+    assert all(tot_count == mask.numel() for mask in bound_masks), "Masks have different sizes"
 
-    # Optionally log the top-k number
-    mid_str = "Cert."
-    if k is not None and k > 1:
-        mid_str += f" (Top k={k})"
+    logging.info(f"{header} Robustness: {bound_cnt}")
+    for mask, desc in zip(bound_masks, masks_desc):
+        cert_count = torch.sum(mask).item()
 
-    cert_count = torch.sum(bound_mask).item()
-    logging.info(f"{header} {mid_str} Model # Submodels: {model.n_models}")
-    if config.is_ssl():
-        logging.info(f"{header} {mid_str} Model SSL Degree: {config.SSL_DEGREE}")
-    logging.info(f"{header} {mid_str} Bound: {bound_cnt}")
-
-    ratio = cert_count / tot_count
-    logging.info(f"{header} {mid_str} Count: {cert_count} / {tot_count} ({ratio:.2%})")
-    return ratio
+        ratio = cert_count / tot_count
+        logging.info(f"{desc} {header} Acc.: {ratio:.2%} ({cert_count} / {tot_count})")
 
 
 def build_bound_str(bound_dist: Union[float, int, str]) -> str:

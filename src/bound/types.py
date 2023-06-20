@@ -23,6 +23,8 @@ class AltSubType(enum.Enum):
 
     LGBM = "LightGBM"
 
+    MEDIAN = "Median"
+
     NN = "nn"
 
     def is_torch(self) -> bool:
@@ -42,6 +44,9 @@ class AltSubType(enum.Enum):
 
     def is_lasso(self) -> bool:
         return self == self.LASSO
+
+    def is_median(self) -> bool:
+        return self == self.MEDIAN
 
 
 @dataclasses.dataclass

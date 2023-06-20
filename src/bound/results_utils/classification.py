@@ -24,9 +24,7 @@ class ClassificationResults:
     ids: LongTensor
     is_correct: BoolTensor = torch.zeros(0)
 
-    full_yhat: Tensor = torch.zeros(0)
-
-    y_pred: LongTensor = torch.zeros(0)
+    full_wide: Tensor = torch.zeros(0)
 
 
 def calc(model: learner_ensemble.DisjointEnsemble, tg: TensorGroup) -> NoReturn:
@@ -43,10 +41,7 @@ def calc(model: learner_ensemble.DisjointEnsemble, tg: TensorGroup) -> NoReturn:
     logging.info(f"Starting: {msg}")
 
     with torch.no_grad():
-        ds_info.full_yhat = model.predict_wide(x=ds_info.x).cpu()
-    # Get the final prediction
-    ds_info.y_pred = model.calc_prediction(ds_info.full_yhat)
-    ds_info.is_correct = ds_info.y_pred == ds_info.lbls
+        ds_info.full_wide = model.forward_wide(x=ds_info.x).cpu()
 
     logging.info(f"COMPLETED: {msg}")
 
@@ -61,19 +56,37 @@ def _get_test_x_y(tg: TensorGroup) -> Tuple[Tensor, LongTensor, LongTensor, Long
 
 def _log_ds_bounds(model: learner_ensemble.DisjointEnsemble,
                    ds_info: ClassificationResults) -> NoReturn:
-    r""" Log the robustness bound """
+    r""" Log the certified robustness bounds """
     # Sort all the labels
     all_lbls, _ = torch.sort(torch.unique(ds_info.lbls), dim=0)
     n_cls = torch.max(all_lbls).item() + 1
 
     # Calculate the robustness bounds
-    top1_res = model.calc_classification_bound(full_yhat=ds_info.full_yhat,
-                                               n_cls=n_cls, y_lbl=ds_info.lbls)
+    full_yhat = torch.argmax(ds_info.full_wide, dim=2)
+    plurality = model.calc_classification_bound(full_yhat=full_yhat, n_cls=n_cls,
+                                                y_lbl=ds_info.lbls)
 
     for k in config.TOP_K_VALS:
-        bound_res = model.calc_topk_bound(k=k, full_yhat=ds_info.full_yhat,
-                                          n_cls=n_cls, y=ds_info.y)
-        utils.log_certification_ratio(model=model, bound=bound_res, k=k)
+        bound_res = model.calc_topk_bound(k=k, full_yhat=full_yhat, n_cls=n_cls, y=ds_info.y)
+        utils.log_robustness(bounds=[bound_res], bounds_desc=[f"Plurality Top-{k}"])
 
+    runoff = _get_runoff_robustness(model=model, ds_info=ds_info)
     # As explained above, bound distance is 0 which represents the example is correctly labeled.
-    utils.log_certification_ratio(model=model, bound=top1_res)
+    utils.log_robustness(bounds=[runoff, plurality], bounds_desc=["Run-Off", "Plurality"])
+
+
+def _get_runoff_robustness(model: learner_ensemble.DisjointEnsemble,
+                           ds_info: ClassificationResults) -> LongTensor:
+    r""" Calculate the run-off certified robustness """
+    bound, pred = model.calc_runoff_bound(full_yhat=ds_info.full_wide)
+
+    is_correct = pred == ds_info.y
+    assert is_correct.shape == pred.shape
+
+    # Log the run-off accuracy
+    acc = is_correct.sum().float() / is_correct.numel()
+    logging.info(f"Run-Off Accuracy: {acc:.2%}")
+
+    bound_correct = bound.clone()
+    bound_correct[~is_correct] = -1
+    return bound_correct

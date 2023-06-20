@@ -46,10 +46,10 @@ gettrace = getattr(sys, 'gettrace', None)
 if gettrace is None:
     NUM_WORKERS = 2
 elif gettrace():
-    print("Debugger detected.  Using only a single worker")
+    # print("Debugger detected.  Using only a single worker")
     NUM_WORKERS = 0
 else:
-    print("Debugger does not appear to be enabled.  Defaulting to parallel workers")
+    # print("Debugger does not appear to be enabled.  Defaulting to parallel workers")
     NUM_WORKERS = 2
 
 

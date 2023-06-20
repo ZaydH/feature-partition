@@ -1,8 +1,9 @@
 ---
   dataset: "cifar10"
   is_classification: True
-  top_k_vals: [2, 3]
-  random_feat_split: True
+  top_k_vals: []
+  random_feat_split: False
+  walking_feat_split: True
   forward_batch_size: 512
   # Ensemble parameters
   alt_type: "nn"

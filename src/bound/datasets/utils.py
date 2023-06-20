@@ -156,7 +156,7 @@ def _print_y_stats(y: Tensor, ds_name: str, min_y: float, max_y: float,
     assert y.numel() == torch.sum(histc).item(), "Elements lost in histogram"
 
     # Standard header when printing the Y stats
-    head_flds = [config.DATASET.value.name, ds_name, "Y"]
+    head_flds = [ds_name, "Y"]
     header = " ".join(head_flds)
 
     # Print the histogram
@@ -175,7 +175,7 @@ def _print_y_stats(y: Tensor, ds_name: str, min_y: float, max_y: float,
     names = ["Min", "25%-Quartile", "Median", "75%-Quartile", "Max"]
     quant_vals = torch.quantile(y, q=quantiles)
     for name, val in zip(names, quant_vals.tolist()):
-        logging.info(f"{header} Perturb {name}: {val:.3f}")
+        logging.info(f"{header} {name}: {val:.3f}")
     # Interquartile range
     val = quant_vals[-2] - quant_vals[1]
     logging.info(f"{header} IQR: {val.item():.3f}")

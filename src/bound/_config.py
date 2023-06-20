@@ -1,6 +1,7 @@
 __all__ = [
     "ALT_TYPE",
     "BATCH_SIZE",
+    "COLUMN_FEAT_SPLIT",
     "DATASET",
     "DEBUG",
     "FORWARD_BATCH_SIZE",
@@ -81,6 +82,7 @@ BOUND_DIST = None
 IS_BOUND_PERCENT = False
 
 PARTITION_TRAIN = False
+COLUMN_FEAT_SPLIT = False
 RANDOM_FEAT_SPLIT = False
 PATCH_FEAT_SPLIT = False
 WALKING_FEAT_SPLIT = False
@@ -198,6 +200,7 @@ def _verify_configuration() -> NoReturn:
 
     # Only a single feature split version is supported
     feats_versions = [
+        COLUMN_FEAT_SPLIT,
         PATCH_FEAT_SPLIT,
         RANDOM_FEAT_SPLIT,
         WALKING_FEAT_SPLIT,
@@ -222,7 +225,7 @@ def print_configuration(log: Callable = logging.info) -> NoReturn:
     log(f"Dataset: {DATASET.value.name}")
     # log(f"Is Rotate: {IS_ROTATE}")
     log(f"Is Classification: {IS_CLASSIFICATION}")
-    if IS_CLASSIFICATION:
+    if IS_CLASSIFICATION and TOP_K_VALS:
         log(f"Top K Vals: {TOP_K_VALS}")
 
     log(f"Is Regression: {IS_REGRESSION}")
@@ -232,23 +235,25 @@ def print_configuration(log: Callable = logging.info) -> NoReturn:
         log(f"Is Bound Distance Percentage: {IS_BOUND_PERCENT}")
 
     log(f"Random Feature Split: {RANDOM_FEAT_SPLIT}")
+    log(f"Column Feature Split: {COLUMN_FEAT_SPLIT}")
     log(f"Patch Feature Split: {PATCH_FEAT_SPLIT}")
     log(f"Walking Feature Split: {WALKING_FEAT_SPLIT}")
     log(f"Partition Training Set: {PARTITION_TRAIN}")
 
-    log(f"Batch Size: {BATCH_SIZE}")
-    log(f"# Epoch: {NUM_EPOCH}")
-    log(f"Learning Rate: {_none_format(LEARNING_RATE, '.0E')}")
-    log(f"Weight Decay: {_none_format(WEIGHT_DECAY, '.0E')}")
+    if ALT_TYPE.is_torch():
+        log(f"Batch Size: {BATCH_SIZE}")
+        log(f"# Epoch: {NUM_EPOCH}")
+        log(f"Learning Rate: {_none_format(LEARNING_RATE, '.0E')}")
+        log(f"Weight Decay: {_none_format(WEIGHT_DECAY, '.0E')}")
 
     submodel_str = ALT_TYPE.value if is_alt_submodel() else "NA"
     log(f"Submodel Type: {submodel_str}")
     if MODEL_NAME is not None:
         log(f"Model Name: {MODEL_NAME}")
     log(f"Submodel Constructor Parameters: {MODEL_PARAMS}")
-    log(f"Submodel SSL Parameters: {SSL_PARAMS}")
-    log(f"# Disjoint Models: {N_DISJOINT_MODELS}")
-    log(f"SSL Degree: {SSL_DEGREE}")
+    # log(f"Submodel SSL Parameters: {SSL_PARAMS}")
+    log(f"# Models: {N_DISJOINT_MODELS}")
+    # log(f"SSL Degree: {SSL_DEGREE}")
     log(f"Validation Split Ratio: {VALIDATION_SPLIT_RATIO:.2f}")
 
     log(f"Quiet Mode: {QUIET}")
