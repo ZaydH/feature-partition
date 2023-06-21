@@ -1,9 +1,8 @@
-@misc{Hammoudeh:2023:FeaturePartition,
-    author = {Hammoudeh, Zayd and
-              Lowd, Daniel},
-    title = {Feature Partition Aggregation: A Fast Certified Defense Against a Union of $\ell_0$ Attacks},
-    year  = {2023},
-    eprint = {2302.11628},
-    archivePrefix = {arXiv},
-    primaryClass = {cs.LG},
+@inproceedings{Hammoudeh:2023:FeaturePartitionAdvML,
+    author  = {Zayd Hammoudeh and
+               Daniel Lowd},
+    title   = {Feature Partition Aggregation: A Fast Certified Defense Against a Union of $\ell_0$ Attacks},
+    booktitle = {Proceedings of the 2nd~ICML Workshop on New Frontiers in Adversarial Machine Learning},
+    series  = {AdvML-Frontiers'23},
+    year    = {2023},
 }
