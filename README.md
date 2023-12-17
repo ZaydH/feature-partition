@@ -2,7 +2,7 @@
 
 [![docs](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ZaydH/feature-partition/blob/main/LICENSE)
 
-This repository contains the source code for reproducing the paper "Feature Partition Aggregation: A Fast Certified Defense Against a Union of $\ell_0$ Attacks".
+This repository contains the source code for reproducing the AAAI&nbsp;2024 paper "Provable Robustness Against a Union of $\ell_0$ Attacks".
 
 * Authors: [Zayd Hammoudeh](https://zaydh.github.io/) and [Daniel Lowd](https://ix.cs.uoregon.edu/~lowd/)
 * Link to Paper: [Arxiv](https://arxiv.org/abs/2302.11628)
@@ -39,12 +39,12 @@ pip install -r requirements.txt
 ## Citation
 
 ```
-@inproceedings{Hammoudeh:2023:FeaturePartitionAdvML,
-    author  = {Zayd Hammoudeh and
-               Daniel Lowd},
-    title   = {Feature Partition Aggregation: A Fast Certified Defense Against a Union of $\ell_0$ Attacks},
-    booktitle = {Proceedings of the 2nd~ICML Workshop on New Frontiers in Adversarial Machine Learning},
-    series  = {AdvML-Frontiers'23},
-    year    = {2023},
+@inproceedings{Hammoudeh:2024:FeaturePartition,
+    author = {Hammoudeh, Zayd and
+              Lowd, Daniel},
+    title = {Provable Robustness Against a Union of $\ell_0$ Attacks},
+    booktitle = {Proceedings of the 38th {AAAI} Conference on Artificial Intelligence},
+    series = {{AAAI}'24},
+    year = {2024},
 }
 ```
